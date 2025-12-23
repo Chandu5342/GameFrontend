@@ -1,11 +1,24 @@
 import { useEffect, useState } from 'react';
 import { getLeaderboard } from '../api/apiClient.js';
+import { io } from 'socket.io-client';
 
 export default function Leaderboard() {
   const [list, setList] = useState([]);
 
   useEffect(() => {
-    getLeaderboard().then(setList).catch(() => setList([]));
+    let mounted = true;
+    getLeaderboard().then((l) => mounted && setList(l)).catch(() => mounted && setList([]));
+
+    // create a temporary socket to listen for leaderboard updates
+    const s = io(import.meta.env.VITE_API_WS || 'http://localhost:4000');
+    s.on('leaderboard:update', (topList) => {
+      setList(topList);
+    });
+
+    return () => {
+      mounted = false;
+      s.disconnect();
+    };
   }, []);
 
   return (
