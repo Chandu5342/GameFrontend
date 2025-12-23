@@ -67,3 +67,14 @@
 .game-board .disc.player2 {
   background: radial-gradient(circle at 30% 30%, #ffd166, #ffb703);
 }
+
+/* highlight the most recent move */
+.game-board .disc.flash {
+  animation: flash-pulse 420ms ease-in-out;
+  box-shadow: 0 0 0 6px rgba(0,0,0,0.06) inset, 0 0 8px rgba(255,255,255,0.6);
+}
+@keyframes flash-pulse {
+  0% { transform: scale(0.6); opacity: 0.6 }
+  50% { transform: scale(1.05); opacity: 1 }
+  100% { transform: scale(1); opacity: 1 }
+}

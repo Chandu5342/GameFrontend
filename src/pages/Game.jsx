@@ -10,6 +10,7 @@ export default function Game({ user }) {
   const [playerNumber, setPlayerNumber] = useState(null);
   const [currentTurn, setCurrentTurn] = useState(null);
   const [error, setError] = useState(null);
+  const [lastMove, setLastMove] = useState(null);
   const socketRef = useRef(null);
 
   useEffect(() => {
@@ -34,22 +35,43 @@ export default function Game({ user }) {
       setStatus(`Game started vs ${payload.opponent}${payload.bot ? ' (BOT)' : ''}`);
     });
 
-    s.on('game:update', (payload) => {
-      setBoard(payload.board);
-      setCurrentTurn(payload.currentTurn ?? payload.nextTurn ?? currentTurn);
-      if (payload.result && payload.result !== 'ongoing') {
-        if (payload.result === 'win') {
-          // determine if current user won
-          if (payload.winner) {
-            const meWon = payload.winner === user.id;
-            setStatus(meWon ? 'You won!' : 'You lost');
-          } else setStatus('Game over');
-        } else {
-          setStatus(payload.result);
-        }
+      s.on('game:update', (payload) => {
+      // If there is a lastMove, animate highlight then apply board update
+      if (payload.lastMove) {
+        const flashDuration = payload.bot ? 600 : 300;
+        setStatus(payload.bot ? 'Bot is thinking...' : 'Updating...');
+        setLastMove(payload.lastMove);
+        // wait for a short animation then update board
+        setTimeout(() => {
+          setBoard(payload.board);
+          setCurrentTurn(payload.currentTurn ?? payload.nextTurn ?? currentTurn);
+          setLastMove(null);
+          if (payload.result && payload.result !== 'ongoing') {
+            if (payload.result === 'win') {
+              if (payload.winner) {
+                const meWon = payload.winner === user.id;
+                setStatus(meWon ? 'You won!' : 'You lost');
+              } else setStatus('Game over');
+            } else setStatus(payload.result);
+          } else {
+            const isMyTurn = playerNumber === payload.currentTurn;
+            setStatus(isMyTurn ? 'Your turn' : `Opponent's turn`);
+          }
+        }, flashDuration);
       } else {
-        const isMyTurn = playerNumber === payload.currentTurn;
-        setStatus(isMyTurn ? 'Your turn' : `Opponent's turn`);
+        setBoard(payload.board);
+        setCurrentTurn(payload.currentTurn ?? payload.nextTurn ?? currentTurn);
+        if (payload.result && payload.result !== 'ongoing') {
+          if (payload.result === 'win') {
+            if (payload.winner) {
+              const meWon = payload.winner === user.id;
+              setStatus(meWon ? 'You won!' : 'You lost');
+            } else setStatus('Game over');
+          } else setStatus(payload.result);
+        } else {
+          const isMyTurn = playerNumber === payload.currentTurn;
+          setStatus(isMyTurn ? 'Your turn' : `Opponent's turn`);
+        }
       }
     });
 
@@ -96,7 +118,14 @@ export default function Game({ user }) {
       <h4>Player: {user.username}</h4>
       <div className="mb-2">Status: <strong>{status}</strong></div>
       {error && <div className="alert alert-warning">{error}</div>}
-      <GameBoard board={board} onDrop={onDrop} disabled={isDisabled} />
+      <div className="mb-2">
+        <button className="btn btn-outline-danger me-2" onClick={() => {
+          if (window.confirm('Resign and forfeit the game?')) {
+            if (socket) socket.emit('resign');
+          }
+        }} disabled={!gameId}>Resign</button>
+      </div>
+      <GameBoard board={board} onDrop={onDrop} disabled={isDisabled} lastMove={lastMove} />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Home from './pages/Home.jsx'
 import Game from './pages/Game.jsx'
 import Leaderboard from './pages/Leaderboard.jsx'
+import RecentGames from './pages/RecentGames.jsx'
 
 import './App.css'
 
@@ -23,6 +24,7 @@ export default function App() {
       <Game user={user} />
       <hr />
       <Leaderboard />
+      <RecentGames />
     </div>
   );
 }
