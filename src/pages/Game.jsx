@@ -22,6 +22,10 @@ export default function Game({ user }) {
 
     s.on('queue:joined', (p) => setStatus('Waiting in queue...'));
 
+    s.on('queue:countdown', (p) => {
+      setStatus(`Waiting in queue... ${p.remaining}s`);
+    });
+
     s.on('game:start', (payload) => {
       setGameId(payload.gameId);
       setPlayerNumber(payload.playerNumber);
