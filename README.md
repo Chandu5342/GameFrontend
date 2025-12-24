@@ -1,16 +1,91 @@
-# React + Vite
+# GameTask — Frontend (Connect Four)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend UI for the Connect Four game. Built with React (Vite) and Bootstrap. Connects to the backend for matchmaking, games, and leaderboard.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features ✨
+- Enter username and join matchmaking
+- Play vs Player and Play vs BOT
+- Reconnect to ongoing games
+- Forfeit (Resign) button with confirmation
+- Rematch / New Game flow with 20s queue and BOT fallback
+- Recent games list and Leaderboard (live updates via socket)
+- Animated move and bot thinking UX hints
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech stack 🔧
+- React (Vite)
+- Socket.IO client
+- Axios
+- Bootstrap 5
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Pages & Components 📄
+- `Home` — username entry
+- `Game` — game board, status, resign, rematch controls
+- `Leaderboard` — shows top players (live updates)
+- `RecentGames` — list of recent finished games
+- `components/GameBoard.jsx` — board UI and animations
+
+---
+
+## Setup & Run ▶️
+1. Copy `.env.example` to `.env` and set API URL if required:
+
+```
+VITE_API_URL=http://localhost:4000
+VITE_API_WS=http://localhost:4000
+```
+
+2. Install and run:
+
+```bash
+cd GameFrontend
+npm install
+npm run dev
+# build for production
+npm run build
+```
+
+Default dev port: `5173` (Vite). The frontend expects the backend to be running and accessible at `VITE_API_URL`/`VITE_API_WS`.
+
+---
+
+## WebSocket events (client usage) 🔁
+Client emits:
+- `join` { username }
+- `move` { gameId, col }
+- `resign` / `leave` — immediate forfeit
+- `leaveQueue` — cancel queue
+- `rematch` { mode }
+- `rematch:accept`, `rematch:decline`
+
+Client listens for:
+- `queue:joined`, `queue:countdown`, `queue:left`
+- `game:start`, `game:update` (includes `lastMove`), `game:ended`
+- `game:bot:thinking`
+- `rematch:*` events
+- `leaderboard:update`
+
+---
+
+## UI Behavior Notes 💡
+- When a game ends a colored popup is shown (green for win, red for loss) with `New Game` and `Cancel` options.
+- `New Game` uses matchmaking: 20s wait, cancelable; falls back to BOT if no match found.
+- Bot moves are delayed slightly with a `game:bot:thinking` event to enable animated UX.
+
+---
+
+## Testing & Development 🧪
+- Run dev backend and frontend concurrently for full experience.
+- Use multiple browser tabs or different browsers to simulate two players.
+
+---
+
+## Contributing
+- Add features or UI polish with tests where applicable; open a PR with screenshots and notes.
+
+License: MIT
