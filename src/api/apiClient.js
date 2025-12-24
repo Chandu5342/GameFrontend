@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000' });
+//const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000' });
+const API = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'https://gamebackend-f6ik.onrender.com' });
+
 
 export async function createUser(username) {
   const res = await API.post('/users', { username });
