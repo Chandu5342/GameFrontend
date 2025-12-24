@@ -11,6 +11,10 @@ export default function Game({ user }) {
   const [currentTurn, setCurrentTurn] = useState(null);
   const [error, setError] = useState(null);
   const [lastMove, setLastMove] = useState(null);
+  const [showRematchOptions, setShowRematchOptions] = useState(false);
+  const [rematchRequestFrom, setRematchRequestFrom] = useState(null);
+  const [rematchWaiting, setRematchWaiting] = useState(null);
+  const [rematchDeclined, setRematchDeclined] = useState(null);
   const socketRef = useRef(null);
 
   useEffect(() => {
@@ -77,6 +81,25 @@ export default function Game({ user }) {
 
     s.on('game:ended', (payload) => {
       setStatus('Game ended: ' + payload.result);
+      // show rematch options after a short delay so user sees final status
+      setTimeout(() => {
+        setShowRematchOptions(true);
+      }, 400);
+    });
+
+    // rematch request from opponent
+    s.on('rematch:request', (payload) => {
+      setRematchRequestFrom(payload.from);
+    });
+
+    s.on('rematch:waiting', (payload) => {
+      setRematchWaiting(payload.to);
+      setShowRematchOptions(false);
+    });
+
+    s.on('rematch:declined', (payload) => {
+      setRematchDeclined(payload.by || payload.reason || 'declined');
+      setRematchWaiting(null);
     });
 
     s.on('player:disconnected', (p) => {
@@ -100,6 +123,30 @@ export default function Game({ user }) {
     };
   }, [user]);
 
+  function requestRematch(mode) {
+    if (!socket) return;
+    // close options modal
+    setShowRematchOptions(false);
+    setRematchDeclined(null);
+    socket.emit('rematch', { mode });
+    if (mode === 'queue') setStatus('Searching for opponent...');
+    if (mode === 'bot') setStatus('Starting bot match...');
+    if (mode === 'rematch') setStatus('Requesting rematch...');
+  }
+
+  function respondRematch(accept) {
+    if (!socket) return;
+    if (accept) {
+      socket.emit('rematch:accept');
+      setRematchRequestFrom(null);
+      setStatus('Rematch accepted, starting...');
+    } else {
+      socket.emit('rematch:decline');
+      setRematchRequestFrom(null);
+      setStatus('Declined rematch');
+    }
+  }
+
   function onDrop(col) {
     if (!socket || !gameId) return;
     const isMyTurn = playerNumber === currentTurn;
@@ -118,14 +165,44 @@ export default function Game({ user }) {
       <h4>Player: {user.username}</h4>
       <div className="mb-2">Status: <strong>{status}</strong></div>
       {error && <div className="alert alert-warning">{error}</div>}
+
       <div className="mb-2">
         <button className="btn btn-outline-danger me-2" onClick={() => {
           if (window.confirm('Resign and forfeit the game?')) {
             if (socket) socket.emit('resign');
           }
         }} disabled={!gameId}>Resign</button>
+
+        {showRematchOptions && (
+          <div className="d-inline-block ms-2">
+            <button className="btn btn-primary me-2" onClick={() => requestRematch('rematch')}>Rematch</button>
+            <button className="btn btn-secondary me-2" onClick={() => requestRematch('queue')}>Find Opponent</button>
+            <button className="btn btn-outline-secondary" onClick={() => requestRematch('bot')}>Play vs BOT</button>
+          </div>
+        )}
+
+        {rematchWaiting && (
+          <div className="d-inline-block ms-2 text-muted">Waiting for {rematchWaiting} to accept...</div>
+        )}
+
+        {rematchDeclined && (
+          <div className="d-inline-block ms-2 text-danger">Rematch declined: {rematchDeclined}</div>
+        )}
       </div>
+
       <GameBoard board={board} onDrop={onDrop} disabled={isDisabled} lastMove={lastMove} />
+
+      {rematchRequestFrom && (
+        <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)' }}>
+          <div className="card p-3" style={{ width: 320, margin: '8% auto' }}>
+            <div className="mb-2">{rematchRequestFrom} wants a rematch.</div>
+            <div>
+              <button className="btn btn-primary me-2" onClick={() => respondRematch(true)}>Accept</button>
+              <button className="btn btn-outline-secondary" onClick={() => respondRematch(false)}>Decline</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
