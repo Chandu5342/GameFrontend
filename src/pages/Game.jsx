@@ -21,7 +21,7 @@ export default function Game({ user }) {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    const s = io(import.meta.env.VITE_API_WS || 'http://localhost:4000');
+    const s = io(import.meta.env.VITE_API_WS || 'https://gamebackend-f6ik.onrender.com');
     socketRef.current = s;
 
     s.on('connect', () => console.log('connected', s.id));
